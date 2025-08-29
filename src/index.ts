@@ -221,12 +221,12 @@ server.tool("doubaoGenerateSSMLVoice",
 server.tool("doubaoGenerateSSMLVoiceToFile",
   "Doubao Generate SSML Voice to MP3 File and Subtitle File(SRT)",
   {
-    ssmlContent: z.string().describe("Voice SSML Content"),
+    srcSSMLFilePath: z.string().describe("Source SSML File Path"),
     dstFilePath: z.string().describe("Destination File Path"),
     dstSrtFilePath: z.string().describe("Destination SRT File Path"),
   },
-  async ({ ssmlContent, dstFilePath, dstSrtFilePath }) => {
-    const data = await generateSSML(ssmlContent).catch((e) => e)
+  async ({ srcSSMLFilePath, dstFilePath, dstSrtFilePath }) => {
+    const data = await generateSSML(fs.readFileSync(srcSSMLFilePath, 'utf-8')).catch((e) => e)
     if (data instanceof Error) {
       return {
         content: [
