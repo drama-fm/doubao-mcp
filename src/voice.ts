@@ -162,7 +162,7 @@ export async function generateVoiceRaw(text: string, speakerId: string, emotionI
 
 function formatNumber(v: number, minLength: number = 2) {
     let s = v.toString();
-    while (s.length < length) {
+    while (s.length < minLength) {
         s = '0' + s
     }
     return s
@@ -176,7 +176,7 @@ export function generateSRT(subtitle: Subtitle[]) {
     let srt: string[] = [];
     for (let i = 0; i < subtitle.length; i++) {
         let s = subtitle[i]
-        srt.push(`${i + 1}\n${dateFormat(s.start)} --> ${dateFormat(s.end)}\n${s.text}\n`)
+        srt.push(`${i + 1}\n${dateFormat(Math.floor(s.start * 1000))} --> ${dateFormat(Math.floor(s.end * 1000))}\n${s.text}\n`)
     }
     return srt.join('\n')
 }
