@@ -68,14 +68,16 @@ export async function appendVoiceRaw(dst: VoiceRaw, src: VoiceRaw): Promise<void
 }
 
 export const ResouceId = process.env.DOUBAO_VOICE_RESOURCE_ID || 'volc.service_type.10029'
-export const AppId = process.env.DOUBAO_VOICE_APP_ID
-export const AccessToken = process.env.DOUBAO_VOICE_ACCESS_TOKEN
+export const ApiKey = process.env.DOUBAO_TTS_API_KEY
 
 export async function generateVoiceRaw(text: string, speakerId: string, emotionId?: string): Promise<VoiceRaw> {
+
+    if (!ApiKey) {
+        throw new Error("DOUBAO_TTS_API_KEY is not set")
+    }
     const url = "https://openspeech.bytedance.com/api/v3/tts/unidirectional";
     const headers: Record<string, string> = {
-        "X-Api-App-Id": AppId!,
-        "X-Api-Access-Key": AccessToken!,
+        "x-api-key": ApiKey,
         "X-Api-Resource-Id": ResouceId, // 这个参数在Python示例中为空，根据实际情况可能需要配置
         "X-Api-Request-Id": randomUUID(),
         "Content-Type": "application/json"
@@ -88,13 +90,14 @@ export async function generateVoiceRaw(text: string, speakerId: string, emotionI
         "req_params": {
             "text": text,
             "speaker": speakerId,
+            "model": "seed-tts-1.1",
             "audio_params": {
                 "format": "mp3",
                 "sample_rate": 24000,
                 "enable_timestamp": true,
                 "emotion": emotionId
             },
-            "additions": '{"explicit_language":"zh","disable_markdown_filter":true, "enable_timestamp":true}'
+            "additions": '{"disable_markdown_filter":true, "enable_timestamp":true}'
         }
     };
 

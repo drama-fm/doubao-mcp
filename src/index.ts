@@ -8,8 +8,6 @@ import { generateSRT, generateVoiceData, generateVoiceRaw } from "./voice.js";
 import { speakers } from "./spaker.js";
 import { generateSSML } from "./ssml.js";
 
-let _apikey: string | undefined = undefined
-
 // Create server instance
 const server = new McpServer({
   name: "Doubao MCP Server",
@@ -30,7 +28,7 @@ server.tool("doubaoGenerateImage",
     guidance_scale: z.number().describe("Controls the balance between the prompt and the generated image. Valid range is [0.1, 10], with a default value of 0.25."),
   },
   async ({ prompt, size, seed, guidance_scale }) => {
-    const data = await generateImage(_apikey!, prompt, size, seed, guidance_scale).catch((e) => e)
+    const data = await generateImage(prompt, size, seed, guidance_scale).catch((e) => e)
     if (data instanceof Error) {
       return {
         content: [
@@ -63,7 +61,7 @@ server.tool("doubaoGenerateImageToFile",
     dstFilePath: z.string().describe("Destination File Path"),
   },
   async ({ prompt, size, seed, guidance_scale, dstFilePath }) => {
-    const data = await generateImage(_apikey!, prompt, size, seed, guidance_scale).catch((e) => e)
+    const data = await generateImage(prompt, size, seed, guidance_scale).catch((e) => e)
     if (data instanceof Error) {
       return {
         content: [
@@ -250,18 +248,6 @@ server.tool("doubaoGenerateSSMLVoiceToFile",
   },)
 
 async function main() {
-  for (let i = 0; i < process.argv.length; i++) {
-    if (process.argv[i] == '--api-key' && i + 1 < process.argv.length) {
-      _apikey = process.argv[i + 1]
-      i++
-    }
-  }
-
-  if (!_apikey) {
-    console.error("Error: --api-key is required");
-    process.exit(1);
-  }
-
   const transport = new StdioServerTransport();
   await server.connect(transport);
   console.error("Doubao MCP Server running on stdio");

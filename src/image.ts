@@ -1,11 +1,15 @@
 
 const MODEL = process.env.DOUBAO_IMAGE_MODEL || "doubao-seedream-3-0-t2i-250415"
+export const ApiKey = process.env.DOUBAO_IMAGE_API_KEY
 
-export async function generateImage(apikey: string, prompt: string, size: string = "1024x1024", seed: number = -1, guidance_scale: number = 0.25): Promise<string> {
+export async function generateImage(prompt: string, size: string = "1024x1024", seed: number = -1, guidance_scale: number = 0.25): Promise<string> {
+    if (!ApiKey) {
+        throw new Error("DOUBAO_IMAGE_API_KEY is not set")
+    }
     const rs = await fetch("https://ark.cn-beijing.volces.com/api/v3/images/generations", {
         method: "POST",
         headers: {
-            "Authorization": `Bearer ${apikey}`,
+            "Authorization": `Bearer ${ApiKey}`,
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
