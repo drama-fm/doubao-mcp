@@ -4,9 +4,10 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { generateImage } from "./image.js";
 import fs from 'fs'
-import { generateSRT, generateVoiceData, generateVoiceRaw } from "./voice.js";
-import { speakers } from "./spaker.js";
-import { generateSSML } from "./ssml.js";
+import { generateVoiceRaw } from "./voice/raw.js";
+import { generateSRT } from "./voice/srt.js";
+import { generateSSML } from "./voice/ssml.js";
+import { speakers } from "./voice/speaker.js";
 
 // Create server instance
 const server = new McpServer({
@@ -106,12 +107,14 @@ server.tool("getDoubaoSSMLSchema",
       content: [
         {
           type: "text",
-          text: `SSML file containing episode dialogue information.
+          text: `An SSML file containing episode dialogue information.
 It includes the fm:prompt attribute and tags such as <mark name="IMAGE_{image_id}" fm:prompt="Image prompt" />
-<voice name="{speaker_name}" fm:speaker-id="{speaker_id}"></voice>
+<voice name="{speaker_name}" fm:speaker-id="{speaker_id}" fm:id="{dialogue_id}"></voice>
 <fm:emotion name="{emotion_id}">{subtext}</fm:emotion> (Text with emotion)
 <s>{subtext}</s> (Ordinary text)
-Here, image_id values are integers that should be at least two digits long, padded with leading zeros if necessary.`
+Here, the image_id values are integers that should be at least two digits long, padded with leading zeros if necessary.
+The dialogue_id is unique within the file and corresponds to the dialogue content.
+`
         },
       ],
     };
@@ -139,12 +142,12 @@ server.tool("doubaoGenerateVoice",
       content: [
         {
           type: "audio",
-          data: generateVoiceData(data.data),
+          data: data.data.toString('base64'),
           mimeType: "audio/mpeg",
         },
         {
           type: "text",
-          text: "```srt\n" + generateSRT(data.subtitle) + "\n```\n\n"
+          text: "```srt\n" + generateSRT([data]) + "\n```\n\n"
         },
       ],
     };
@@ -170,8 +173,8 @@ server.tool("doubaoGenerateVoiceToFile",
         ],
       };
     }
-    fs.writeFileSync(dstFilePath, Buffer.concat(data.data))
-    fs.writeFileSync(dstSrtFilePath, generateSRT(data.subtitle))
+    fs.writeFileSync(dstFilePath, data.data)
+    fs.writeFileSync(dstSrtFilePath, generateSRT([data]))
     return {
       content: [
         {
@@ -205,12 +208,12 @@ server.tool("doubaoGenerateSSMLVoice",
       content: [
         {
           type: "audio",
-          data: generateVoiceData(data.data),
+          data: data.data.toString('base64'),
           mimeType: "audio/mpeg",
         },
         {
           type: "text",
-          text: "```srt\n" + generateSRT(data.subtitle) + "\n```\n\n"
+          text: "```srt\n" + data.srt + "\n```\n\n"
         },
       ],
     };
@@ -235,8 +238,8 @@ server.tool("doubaoGenerateSSMLVoiceToFile",
         ],
       };
     }
-    fs.writeFileSync(dstFilePath, Buffer.concat(data.data))
-    fs.writeFileSync(dstSrtFilePath, generateSRT(data.subtitle))
+    fs.writeFileSync(dstFilePath, data.data)
+    fs.writeFileSync(dstSrtFilePath, data.srt)
     return {
       content: [
         {

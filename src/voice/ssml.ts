@@ -1,8 +1,10 @@
-import { speakers } from "./spaker.js";
-import { appendVoiceRaw, generateVoiceRaw, VoiceRaw } from "./voice.js";
+import { speakers } from "./speaker.js";
+import { generateVoiceRaw, VoiceRaw } from "./raw.js";
 import { DOMParser } from "@xmldom/xmldom";
+import { concat } from "./concat.js";
+import { generateSRT } from "./srt.js";
 
-async function generateSSMLBySpeakerId(dst: VoiceRaw, p: Element, speakerId: string, emotion?: string): Promise<void> {
+async function generateSSMLBySpeakerId(dst: VoiceRaw[], p: Element, speakerId: string, emotion?: string): Promise<void> {
     let v = p.firstChild
     while (v) {
         if (v.nodeType === 1) {
@@ -29,7 +31,7 @@ async function generateSSMLBySpeakerId(dst: VoiceRaw, p: Element, speakerId: str
                 if (text.length > 0) {
                     console.info(speakerId, "=>", text)
                     let src = await generateVoiceRaw(v.textContent, speakerId, emotion)
-                    appendVoiceRaw(dst, src)
+                    dst.push(src)
                 }
             }
         }
@@ -37,16 +39,19 @@ async function generateSSMLBySpeakerId(dst: VoiceRaw, p: Element, speakerId: str
     }
 }
 
-export async function generateSSML(text: string): Promise<VoiceRaw> {
+export interface SSMLVoice {
+    data: Buffer
+    srt: string
+    duration: number
+}
+
+export async function generateSSML(text: string): Promise<SSMLVoice> {
     const doc = new DOMParser().parseFromString(text, "text/xml");
     const speak = doc.getElementsByTagName("speak")[0] as HTMLElement
     if (!speak) {
         throw new Error("No speak tag found")
     }
-    const dst: VoiceRaw = {
-        data: [],
-        subtitle: []
-    }
+    const dst: VoiceRaw[] = []
     let p = speak.firstChild
     while (p) {
         if (p.nodeType === 1 && p.nodeName === "voice") {
@@ -59,16 +64,17 @@ export async function generateSSML(text: string): Promise<VoiceRaw> {
             const el = p as Element
             const name = el.getAttribute("name")
             if (name) {
-                const endTime = dst.subtitle.length > 0 ? dst.subtitle[dst.subtitle.length - 1].end : 0
-                dst.subtitle.push({
-                    start: endTime,
-                    end: endTime,
-                    text: `<${name}>`
-                })
+                dst.push({ data: Buffer.from([]), text: `<${name}>`, duration: 0 })
             }
         }
         p = p.nextSibling
     }
 
-    return dst
+    const data = await concat(dst.map(s => s.data))
+    const srt = generateSRT(dst)
+    return {
+        data,
+        srt,
+        duration: dst.reduce((p, c) => p + c.duration, 0)
+    }
 }

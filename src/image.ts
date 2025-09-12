@@ -1,5 +1,5 @@
 
-const MODEL = process.env.DOUBAO_IMAGE_MODEL || "doubao-seedream-3-0-t2i-250415"
+const MODEL = process.env.DOUBAO_IMAGE_MODEL || "doubao-seedream-4-0-250828"
 export const ApiKey = process.env.DOUBAO_IMAGE_API_KEY
 
 export async function generateImage(prompt: string, size: string = "1024x1024", seed: number = -1, guidance_scale: number = 0.25): Promise<string> {
